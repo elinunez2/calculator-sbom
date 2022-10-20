@@ -26,10 +26,9 @@ jobs:
       run: dotnet restore 
       
     - name: Build
-      
-      run: 
-       working-directory: src
-       dotnet build --no-restore
+      run: dotnet build --no-restore 
+      working-directory: ./src
+       
       
 
     - name: Generate SBOM
