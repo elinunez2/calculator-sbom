@@ -28,9 +28,6 @@ jobs:
 
     - name: Build
       run: dotnet build --no-restore 
-      working-directory: ./src
-       
-      
 
     - name: Generate SBOM
       shell: pwsh
