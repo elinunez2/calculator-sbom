@@ -28,7 +28,7 @@ jobs:
     - name: Build
       run: |
        dotnet build --no-restore
-       echo ${env:RUNNER_TEMP}
+      working-directory: src
 
     - name: Generate SBOM
       shell: pwsh
