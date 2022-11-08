@@ -18,45 +18,20 @@ jobs:
   
     steps:
     - uses: actions/checkout@v3
-
-
-    - name: Set up GCC
-      uses: egor-tensin/setup-gcc@v1
-      with:
-        version: latest
-        platform: x64
-
-
-    - name: Create Build Environment
-      # Some projects don't allow in-source building, so create a separate build directory
-      # We'll use this as our working directory for all subsequent commands
-      run: cmake -E make_directory ${{runner.workspace}}/build
- 
-    - name: Configure CMake
-      # Use a bash shell so we can use the same syntax for environment variable
-      # access regardless of the host operating system
-      shell: bash
-      working-directory: ${{runner.workspace}}/build
-      # Note the current convention is to use the -S and -B options here to specify source 
-      # and build directories, but this is only available with CMake 3.13 and higher.  
-      # The CMake binaries on the Github Actions machines are (as of this writing) 3.12
-      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_CXX_COMPILER=g++-10
- 
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v2
+          
+    - name: Restore dependencies
+      run: dotnet restore 
+      
     - name: Build
-      working-directory: ${{runner.workspace}}/build
-      shell: bash
-      # Execute the build.  You can specify a specific target with "--target <NAME>"
-      run: cmake --build . --config $BUILD_TYPE
-
-    - name: Generate SBOM
       run: |
+       dotnet build --no-restore
+       echo ${env:RUNNER_TEMP}
+    
+    - name: Generate SBOM Using Syft
+      run: |
+        curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+        syft packages . -o spdx-tag-value -t ./sbom.spdx
         ls
-        Invoke-WebRequest -Uri "https://github.com/microsoft/sbom-tool/releases/latest/download/sbom-tool-win-x64.exe" -OutFile "${env:RUNNER_TEMP}/sbom-tool.exe"
-        & ${env:RUNNER_TEMP}/sbom-tool generate -b . -bc . -pn Test -pv 1.0.1 -ps Elijah_Nunez -nsb http://workflowtest/ -v Verbose
-        ls ./_manifest/spdx_2.2/
-        cat ./_manifest/spdx_2.2/manifest.spdx.json
-      #Build and upload Artifacts
-    - name: Upload a Build Artifact
-      uses: actions/upload-artifact@v3.1.0
-      with:
-        path: ./_manifest
